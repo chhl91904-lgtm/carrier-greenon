@@ -2,6 +2,8 @@
 
 Carrier GreenON은 캐리어 에어컨 사용자를 위한 ESG 친환경 냉방 미션 + 리워드 모바일 웹앱입니다. 실제 에어컨 API 대신 가상 IoT 상태를 사용하며, 사용자 계정과 미션·포인트·구매 데이터는 Supabase에 저장합니다.
 
+배포 URL: https://carrier-greenon-yieb.onrender.com
+
 ## 주요 사용자 흐름
 
 1. Supabase 이메일 회원가입 또는 로그인
