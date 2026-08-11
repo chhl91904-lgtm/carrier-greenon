@@ -1,0 +1,12 @@
+# 로컬 환경변수와 생성된 런타임 설정은 Git에 올리지 않습니다.
+.env
+.env.*
+!.env.example
+config.js
+# 개발 지시용 원문 프롬프트는 배포 소스에서 제외합니다.
+\# 에어컨 리워드 웹앱 프롬프트.txt
+
+# 운영체제 및 편집기 임시 파일
+.DS_Store
+Thumbs.db
+.vscode/
