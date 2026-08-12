@@ -27,14 +27,18 @@ const authModeButtons = document.querySelectorAll("[data-auth-mode]");
 const authForm = document.querySelector("[data-auth-form]");
 const authError = document.querySelector("[data-auth-error]");
 const logoutButton = document.querySelector("[data-logout]");
+const demoBanner = document.querySelector("[data-demo-banner]");
 
 // 브라우저에는 공개 가능한 publishable key만 전달합니다. secret/service_role 키는 허용하지 않습니다.
+// 주소에 ?demo=1이 있으면 실제 계정 대신 이 브라우저에만 저장되는 체험 모드를 사용합니다.
+const pageQuery = new URLSearchParams(window.location.search);
+const isDemoMode = pageQuery.get("demo") === "1";
 const supabaseSettings = window.GREENON_CONFIG ?? {};
 const hasSafeSupabaseConfig =
   typeof supabaseSettings.supabaseUrl === "string" &&
   typeof supabaseSettings.supabasePublishableKey === "string" &&
   supabaseSettings.supabasePublishableKey.startsWith("sb_publishable_");
-const supabaseClient = hasSafeSupabaseConfig && window.supabase?.createClient
+const supabaseClient = !isDemoMode && hasSafeSupabaseConfig && window.supabase?.createClient
   ? window.supabase.createClient(
       supabaseSettings.supabaseUrl,
       supabaseSettings.supabasePublishableKey,
@@ -74,6 +78,12 @@ function loadDemoUser() {
 }
 
 let currentUser = supabaseClient ? null : loadDemoUser();
+
+// 원클릭 데모는 이메일 입력 없이 즉시 모든 화면을 체험할 수 있도록 안전한 가상 사용자를 만듭니다.
+if (isDemoMode && !currentUser) {
+  currentUser = { name: "GreenON 데모", email: "demo@greenon.local" };
+  window.localStorage.setItem(DEMO_USER_KEY, JSON.stringify(currentUser));
+}
 
 /** Supabase 사용자 객체에서 화면 표시용 정보만 꺼냅니다. 메타데이터는 권한 판단에 사용하지 않습니다. */
 function toAppUser(user) {
@@ -590,8 +600,9 @@ async function logoutUser() {
 /** 저장된 Supabase 세션을 복구하고 이후 로그인 상태 변화를 구독합니다. */
 async function initializeSupabaseAuth() {
   const connectionBadge = document.querySelector("[data-auth-connection]");
+  demoBanner.hidden = !isDemoMode;
   if (!supabaseClient) {
-    connectionBadge.textContent = "데모 모드";
+    connectionBadge.textContent = isDemoMode ? "이메일 없는 로컬 데모" : "로컬 데모 모드";
     connectionBadge.classList.add("is-demo");
     return;
   }
@@ -1102,13 +1113,13 @@ renderProfile();
 initializeSupabaseAuth();
 
 // QA 검증 시 ?simulation=filter처럼 주소에 상태를 지정해 바로 확인할 수 있습니다.
-const simulationPreview = new URLSearchParams(window.location.search).get("simulation");
+const simulationPreview = pageQuery.get("simulation");
 if (!supabaseClient && ["normal", "filter", "sensor", "power"].includes(simulationPreview)) {
   simulateAircon(simulationPreview);
 }
 
 // ?mission=success 또는 ?mission=failed로 완료/실패 화면을 빠르게 회귀 검사할 수 있습니다.
-const missionPreview = new URLSearchParams(window.location.search).get("mission");
+const missionPreview = pageQuery.get("mission");
 if (!supabaseClient && missionPreview === "success") {
   startMission();
   for (let step = 0; step < 4; step += 1) advanceMissionTime();
@@ -1120,14 +1131,14 @@ if (!supabaseClient && missionPreview === "failed") {
 }
 
 // ?purchase=상품ID를 사용하면 구매 성공 또는 포인트 부족 화면을 빠르게 검증할 수 있습니다.
-const purchasePreview = new URLSearchParams(window.location.search).get("purchase");
+const purchasePreview = pageQuery.get("purchase");
 if (!supabaseClient && purchasePreview && rewards.some((reward) => reward.id === purchasePreview)) {
   openRewardDialog(purchasePreview);
   purchaseSelectedReward();
 }
 
 // ?demoUser=1로 인증된 MY 화면과 GREEN REPORT를 빠르게 확인할 수 있습니다.
-if (!supabaseClient && new URLSearchParams(window.location.search).get("demoUser") === "1") {
+if (!supabaseClient && pageQuery.get("demoUser") === "1") {
   currentUser = { name: "그린온", email: "greenon@example.com" };
   renderProfile();
 }

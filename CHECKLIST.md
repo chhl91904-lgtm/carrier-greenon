@@ -3,7 +3,7 @@
 ## PHASE 1 — 기본 웹앱
 
 - [x] 프로젝트 기본 구조 생성
-- [x] White + Blue 디자인 시스템
+- [x] Brown + Pink 디자인 시스템
 - [x] 모바일 반응형 레이아웃
 - [x] 하단 Navigation
 - [x] 홈 화면
@@ -18,7 +18,7 @@
 - [x] FAN 상태
 - [x] 사용시간
 - [x] 필터 상태
-- [x] 정상 상태 Blue UI
+- [x] 정상 상태 Brown + Pink UI
 - [x] 비정상 상태 Red UI
 - [x] 상태 시뮬레이션 패널
 
@@ -131,11 +131,22 @@
 - [x] Reward 구매 테스트
 
 
+## PHASE 12 — 도메인 없는 데모
+
+- [ ] Render 기본 URL에서 `?demo=1` 원클릭 진입 (main 배포 후 확인)
+- [x] 이메일 없이 데모 사용자 자동 로그인
+- [x] 실제 Supabase 계정 모드와 데모 데이터 분리
+- [x] 미션 성공 및 GREEN POINT 적립 테스트
+- [x] 리워드 구매 및 포인트 차감 테스트
+- [x] 새로고침 후 localStorage 데모 기록 유지
+- [x] 모바일 데모 안내 UI 확인
+
+
 ## FINAL CHECK
 
 - [x] PROJECT.md 요구사항 누락 검사
 - [x] 모바일 화면 검사
-- [x] 정상 상태 Blue 확인
+- [x] 정상 상태 Brown + Pink 확인
 - [x] Warning/Error Red 확인
 - [x] Supabase 보안 확인
 - [x] 전체 기능 회귀 테스트

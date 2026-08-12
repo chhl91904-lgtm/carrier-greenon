@@ -4,6 +4,17 @@ Carrier GreenON은 캐리어 에어컨 사용자를 위한 ESG 친환경 냉방 
 
 배포 URL: https://carrier-greenon-yieb.onrender.com
 
+## 이메일 없는 데모 체험
+
+별도 도메인을 구매하거나 회원가입하지 않아도 Render 기본 주소에서 바로 체험할 수 있습니다.
+
+**데모 URL:** https://carrier-greenon-yieb.onrender.com/?demo=1
+
+- 데모 사용자는 첫 접속 때 자동으로 로그인됩니다.
+- 미션, GREEN POINT, 구매내역은 현재 브라우저의 localStorage에만 저장됩니다.
+- 데모 상단의 `실제 계정 모드`를 누르면 Supabase 회원가입/로그인 화면으로 돌아갑니다.
+- 데모 데이터와 실제 Supabase 사용자 데이터는 서로 섞이지 않습니다.
+
 ## 주요 사용자 흐름
 
 1. Supabase 이메일 회원가입 또는 로그인
@@ -21,7 +32,7 @@ Carrier GreenON은 캐리어 에어컨 사용자를 위한 ESG 친환경 냉방 
 - Supabase Auth + Postgres + Row Level Security
 - Open-Meteo 현재 날씨·Air Quality API
 - Render Static Site
-- 모바일 우선 White + Blue 디자인 시스템
+- 모바일 우선 Brown + Pink 디자인 시스템
 
 ## 로컬 실행
 
@@ -74,6 +85,6 @@ Render에서 `SUPABASE_URL`과 `SUPABASE_PUBLISHABLE_KEY`를 등록한 뒤 Bluep
 ## 개발 규칙
 
 - 실제 Carrier 에어컨 API를 연결하지 않습니다.
-- 정상 상태는 Blue, 성공 상태는 Blue/Green, 경고와 오류만 Red를 사용합니다.
+- 정상 상태는 Brown/Pink, 성공 상태는 Pink/Green, 경고와 오류만 Red를 사용합니다.
 - JavaScript에는 초보자가 흐름을 이해할 수 있도록 한글 주석을 유지합니다.
 - 기능 완료 후 `CHECKLIST.md`를 갱신하고 기존 흐름을 회귀 검사합니다.
