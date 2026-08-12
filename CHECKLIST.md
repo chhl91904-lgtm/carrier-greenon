@@ -133,7 +133,7 @@
 
 ## PHASE 12 — 도메인 없는 데모
 
-- [ ] Render 기본 URL에서 `?demo=1` 원클릭 진입 (main 배포 후 확인)
+- [x] Render 기본 URL에서 `?demo=1` 원클릭 진입
 - [x] 이메일 없이 데모 사용자 자동 로그인
 - [x] 실제 Supabase 계정 모드와 데모 데이터 분리
 - [x] 미션 성공 및 GREEN POINT 적립 테스트
