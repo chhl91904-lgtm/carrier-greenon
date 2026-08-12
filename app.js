@@ -9,7 +9,10 @@ const airconSummary = document.querySelector("[data-aircon-summary]");
 const simulationButtons = document.querySelectorAll("[data-simulation]");
 const missionCard = document.querySelector("[data-mission-card]");
 const missionStartButton = document.querySelector("[data-mission-start]");
+const mainMissionCompleteButton = document.querySelector("[data-complete-main-mission]");
 const missionActionButtons = document.querySelectorAll("[data-mission-action]");
+const missionList = document.querySelector("[data-mission-list]");
+const missionProgressCircle = document.querySelector("[data-mission-progress-circle]");
 const pointBalanceElements = document.querySelectorAll("[data-point-balance]");
 const transactionList = document.querySelector("[data-transaction-list]");
 const walletEmpty = document.querySelector("[data-wallet-empty]");
@@ -50,6 +53,54 @@ const DEMO_STORAGE_KEY = "carrierGreenON.demoWallet";
 const TODAY_MISSION_ID = "mission-2026-08-11-eco-cooling";
 const DEMO_USER_KEY = "carrierGreenON.demoUser";
 
+// Supabase 연결 전이나 네트워크 오류 때도 동일한 4개 미션을 체험할 수 있는 공개 카탈로그입니다.
+const fallbackMissions = [
+  {
+    id: TODAY_MISSION_ID,
+    code: "eco-cooling-26",
+    category: "ENERGY SAVING",
+    title: "26°C 절전 냉방 지키기",
+    description: "26°C 이상 냉방을 유지해 불필요한 에너지 사용을 줄여요.",
+    required_minutes: 120,
+    min_temperature: 26,
+    reward_points: 120,
+    icon: "❄️",
+  },
+  {
+    id: "mission-filter-check",
+    code: "filter-check",
+    category: "AIR CARE",
+    title: "필터 상태 확인하기",
+    description: "깨끗한 필터 상태를 확인하고 효율적인 냉방을 준비해요.",
+    required_minutes: 1,
+    min_temperature: 26,
+    reward_points: 40,
+    icon: "🫧",
+  },
+  {
+    id: "mission-curtain-close",
+    code: "curtain-close",
+    category: "COOL HOME",
+    title: "햇빛 차단 커튼 닫기",
+    description: "직사광선을 줄여 실내 온도가 빠르게 오르는 것을 막아요.",
+    required_minutes: 1,
+    min_temperature: 26,
+    reward_points: 30,
+    icon: "🪟",
+  },
+  {
+    id: "mission-eco-timer",
+    code: "eco-timer",
+    category: "SMART COOLING",
+    title: "취침 타이머 설정하기",
+    description: "필요한 시간만 냉방하도록 타이머를 설정해 대기 전력을 아껴요.",
+    required_minutes: 1,
+    min_temperature: 26,
+    reward_points: 50,
+    icon: "⏱️",
+  },
+];
+
 // Supabase 연결에 실패해도 화면을 확인할 수 있도록 동일한 구조의 폴백 데이터를 둡니다.
 let rewards = [
   { id: "reward-coffee", category: "FOOD", name: "다회용 컵 음료 쿠폰", price: 80, icon: "☕", description: "개인 다회용 컵 사용 시 즐길 수 있는 친환경 음료 교환 쿠폰이에요." },
@@ -63,8 +114,10 @@ let rewards = [
 let selectedRewardId = null;
 let selectedCategory = "ALL";
 let authMode = "login";
-let activeMissionRecord = null;
+let missions = [...fallbackMissions];
+let activeMissionRecord = missions[0];
 let activeUserMissionId = null;
+let previousMissionPercent = 0;
 
 /** Supabase Auth 연결 전 사용할 최소 데모 세션만 읽습니다. 비밀번호는 저장하지 않습니다. */
 function loadDemoUser() {
@@ -203,10 +256,15 @@ function loadWalletState() {
   try {
     const savedState = JSON.parse(window.localStorage.getItem(DEMO_STORAGE_KEY));
     if (savedState && Number.isFinite(savedState.balance) && Array.isArray(savedState.transactions)) {
+      const todayKey = getLocalDateKey();
       return {
         balance: savedState.balance,
         transactions: savedState.transactions,
-        completedMissionIds: Array.isArray(savedState.completedMissionIds) ? savedState.completedMissionIds : [],
+        // 포인트·거래내역은 계속 보존하고, 오늘 완료 목록만 날짜가 바뀌면 새로 시작합니다.
+        completedMissionIds: savedState.missionDate === todayKey && Array.isArray(savedState.completedMissionIds)
+          ? savedState.completedMissionIds
+          : [],
+        missionDate: todayKey,
         orders: Array.isArray(savedState.orders) ? savedState.orders : [],
       };
     }
@@ -214,11 +272,11 @@ function loadWalletState() {
     console.warn("저장된 지갑 데이터를 읽지 못해 기본값으로 시작합니다.", error);
   }
 
-  return { balance: 0, transactions: [], completedMissionIds: [], orders: [] };
+  return { balance: 0, transactions: [], completedMissionIds: [], missionDate: getLocalDateKey(), orders: [] };
 }
 
 const walletState = supabaseClient
-  ? { balance: 0, transactions: [], completedMissionIds: [], orders: [] }
+  ? { balance: 0, transactions: [], completedMissionIds: [], missionDate: getLocalDateKey(), orders: [] }
   : loadWalletState();
 
 /** 현재 지갑 데이터를 브라우저 임시 저장소에 보관합니다. */
@@ -248,19 +306,38 @@ function formatDatabaseDate(value) {
   }).format(new Date(value));
 }
 
+/** 브라우저의 현지 날짜를 Supabase date 형식과 같은 YYYY-MM-DD로 만듭니다. */
+function getLocalDateKey() {
+  const now = new Date();
+  const offsetDate = new Date(now.getTime() - now.getTimezoneOffset() * 60_000);
+  return offsetDate.toISOString().slice(0, 10);
+}
+
 /** 로그인 여부와 관계없이 공개된 미션·리워드 카탈로그를 Supabase에서 읽습니다. */
 async function loadSupabaseCatalogs() {
   if (!supabaseClient) return;
 
   const [missionResult, rewardResult] = await Promise.all([
-    supabaseClient.from("missions").select("id, code, title, description, required_minutes, min_temperature, reward_points").eq("active", true).limit(1).maybeSingle(),
+    supabaseClient.from("missions").select("id, code, title, description, required_minutes, min_temperature, reward_points").eq("active", true).order("created_at"),
     supabaseClient.from("rewards").select("id, code, category, name, description, icon, price").eq("active", true).order("price"),
   ]);
 
   if (missionResult.error) console.error("미션 데이터를 불러오지 못했습니다.", missionResult.error);
   if (rewardResult.error) console.error("리워드 데이터를 불러오지 못했습니다.", rewardResult.error);
 
-  if (missionResult.data) activeMissionRecord = missionResult.data;
+  if (missionResult.data?.length) {
+    // 아이콘·카테고리는 화면 표현 정보만 보완하고 포인트·ID는 Supabase 값을 신뢰합니다.
+    missions = missionResult.data.map((mission) => {
+      const fallback = fallbackMissions.find((item) => item.code === mission.code);
+      return {
+        ...mission,
+        category: fallback?.category ?? "GREEN ACTION",
+        icon: fallback?.icon ?? "🌿",
+      };
+    });
+    activeMissionRecord = missions.find((mission) => mission.code === "eco-cooling-26") ?? missions[0];
+    renderMissionCollection();
+  }
   if (rewardResult.data?.length) {
     rewards = rewardResult.data.map((reward) => ({
       id: reward.id,
@@ -304,9 +381,12 @@ async function loadSupabaseUserData() {
     date: formatDatabaseDate(transaction.created_at),
   }));
   walletState.balance = (pointResult.data ?? []).reduce((sum, transaction) => sum + transaction.amount, 0);
-  walletState.completedMissionIds = (missionResult.data ?? [])
-    .filter((mission) => mission.status === "success")
+  const successfulMissions = (missionResult.data ?? [])
+    .filter((mission) => mission.status === "success");
+  walletState.completedMissionIds = successfulMissions
+    .filter((mission) => mission.mission_date === getLocalDateKey())
     .map((mission) => mission.mission_id);
+  walletState.completedMissionTotal = successfulMissions.length;
   walletState.orders = (orderResult.data ?? []).map((order) => ({
     id: order.id,
     name: order.rewards?.name ?? "GREEN REWARD",
@@ -315,7 +395,9 @@ async function loadSupabaseUserData() {
     date: formatDatabaseDate(order.purchased_at),
   }));
 
-  const latestMission = missionResult.data?.[0];
+  // 보조 미션의 완료가 핵심 26°C 시간 미션 상태를 덮어쓰지 않도록 별도로 찾습니다.
+  const latestMission = (missionResult.data ?? []).find((mission) =>
+    mission.mission_id === activeMissionRecord?.id && mission.mission_date === getLocalDateKey());
   const warningMessages = {
     POWER_OFF: "에어컨 전원이 꺼져 미션이 종료됐어요.",
     MODE_VIOLATION: "냉방 MODE가 아니어서 미션이 종료됐어요.",
@@ -345,6 +427,7 @@ async function loadSupabaseUserData() {
 
   renderAirconState();
   renderMission();
+  renderMissionCollection();
   renderWallet();
   renderOrders();
   renderProfile();
@@ -487,9 +570,10 @@ function renderProfile() {
   document.querySelector("[data-next-level]").textContent = level.next
     ? `다음 레벨까지 ${formatPoint(level.next - lifetimePoint)}P`
     : "최고 레벨을 달성했어요";
-  document.querySelector("[data-report-missions]").textContent = walletState.completedMissionIds.length;
+  const completedMissionTotal = walletState.completedMissionTotal ?? walletState.completedMissionIds.length;
+  document.querySelector("[data-report-missions]").textContent = completedMissionTotal;
   document.querySelector("[data-report-points]").textContent = formatPoint(lifetimePoint);
-  document.querySelector("[data-report-hours]").textContent = walletState.completedMissionIds.length * 2;
+  document.querySelector("[data-report-hours]").textContent = completedMissionTotal * 2;
   document.querySelector("[data-report-orders]").textContent = walletState.orders.length;
 }
 
@@ -715,26 +799,148 @@ async function purchaseSelectedReward() {
   showToast(`${reward.name} 구매를 완료했어요!`);
 }
 
-/** 오늘의 미션 성공 보상을 중복 없이 한 번만 지급합니다. */
-function awardMissionPoints() {
-  if (walletState.completedMissionIds.includes(TODAY_MISSION_ID)) {
-    showToast("오늘 미션 보상은 이미 지급되었어요.");
+/** 특정 미션의 성공 보상을 localStorage 지갑에 중복 없이 한 번만 지급합니다. */
+function awardMissionPoints(mission = activeMissionRecord) {
+  if (!mission || walletState.completedMissionIds.includes(mission.id)) {
     return false;
   }
 
-  walletState.balance += 120;
-  walletState.completedMissionIds.push(TODAY_MISSION_ID);
+  walletState.balance += mission.reward_points;
+  walletState.completedMissionIds.push(mission.id);
   walletState.transactions.unshift({
     id: `point-${Date.now()}`,
     type: "earn",
-    amount: 120,
-    title: "26°C 절전 냉방 미션 성공",
-    date: "2026. 8. 11. 오늘",
+    amount: mission.reward_points,
+    title: `${mission.title} 성공`,
+    date: `${formatDatabaseDate(new Date())} · 오늘`,
   });
   saveWalletState();
   renderWallet();
   renderProfile();
+  renderMissionCollection();
   return true;
+}
+
+/**
+ * “jQuery Circular Progress Bar With Text Counter”의 숫자 카운터 아이디어를 참고했습니다.
+ * 외부 라이브러리 없이 requestAnimationFrame으로 0%에서 실제 달성률까지 부드럽게 표시합니다.
+ */
+function animateMissionProgress(targetPercent) {
+  if (!missionProgressCircle) return;
+  const percentText = document.querySelector("[data-mission-percent]");
+  const startPercent = previousMissionPercent;
+  const difference = targetPercent - startPercent;
+  const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const duration = reduceMotion ? 0 : 650;
+  const startedAt = performance.now();
+
+  const draw = (now) => {
+    const elapsed = duration === 0 ? 1 : Math.min((now - startedAt) / duration, 1);
+    const eased = 1 - ((1 - elapsed) ** 3);
+    const current = Math.round(startPercent + difference * eased);
+    percentText.textContent = `${current}%`;
+    missionProgressCircle.style.setProperty("--progress-angle", `${current * 3.6}deg`);
+    missionProgressCircle.setAttribute("aria-valuenow", String(current));
+    if (elapsed < 1) window.requestAnimationFrame(draw);
+  };
+
+  window.requestAnimationFrame(draw);
+  previousMissionPercent = targetPercent;
+}
+
+/** 완료 상태와 포인트를 기준으로 보조 미션 카드와 전체 달성률을 다시 그립니다. */
+function renderMissionCollection() {
+  if (!missionList) return;
+  const visibleMissions = missions.filter((mission) => mission.code !== "eco-cooling-26");
+  missionList.innerHTML = visibleMissions.map((mission) => {
+    const completed = walletState.completedMissionIds.includes(mission.id);
+    return `
+      <article class="daily-mission-card ${completed ? "is-completed" : ""}">
+        <div class="daily-mission-card-top">
+          <span class="daily-mission-icon" aria-hidden="true">${escapeHtml(mission.icon)}</span>
+          <div class="daily-mission-copy">
+            <small>${escapeHtml(mission.category)}</small>
+            <h3>${escapeHtml(mission.title)}</h3>
+            <p>${escapeHtml(mission.description)}</p>
+          </div>
+          <span class="daily-mission-points">${formatPoint(mission.reward_points)}P</span>
+        </div>
+        <button
+          class="daily-mission-button"
+          type="button"
+          data-complete-mission="${escapeHtml(mission.id)}"
+          ${completed ? "disabled" : ""}
+        >
+          ${completed ? "✓ 완료됨" : `미션 완료 <span aria-hidden="true">+${formatPoint(mission.reward_points)}P</span>`}
+        </button>
+      </article>
+    `;
+  }).join("");
+
+  const completedCount = missions.filter((mission) => walletState.completedMissionIds.includes(mission.id)).length;
+  const totalCount = missions.length;
+  const percent = totalCount ? Math.round((completedCount / totalCount) * 100) : 0;
+  document.querySelector("[data-completed-mission-count]").textContent = completedCount;
+  document.querySelector("[data-total-mission-count]").textContent = totalCount;
+  animateMissionProgress(percent);
+}
+
+/** 완료 버튼 하나로 실제 미션 기록과 GREEN POINT 적립을 원자적으로 처리합니다. */
+async function completeMission(mission) {
+  if (!mission) return;
+  if (walletState.completedMissionIds.includes(mission.id)) {
+    showToast("오늘 이 미션의 포인트는 이미 지급되었어요.");
+    return;
+  }
+
+  if (mission.code === "eco-cooling-26") {
+    const violationMessage = getMissionViolationMessage(getMissionConditions());
+    if (violationMessage) {
+      missionState.warning = violationMessage;
+      renderMission();
+      showToast("미션 조건을 먼저 정상으로 복구해 주세요.");
+      return;
+    }
+  }
+
+  if (supabaseClient) {
+    if (!currentUser) {
+      changeScreen("my");
+      showToast("미션을 완료하려면 먼저 로그인해 주세요.");
+      return;
+    }
+
+    if (mission.code === "eco-cooling-26") await persistAirconState();
+    const { data, error } = await supabaseClient.rpc("complete_green_mission", {
+      p_mission_id: mission.id,
+    });
+    if (error) {
+      console.error("미션 완료 저장에 실패했습니다.", error);
+      const conditionError = ["POWER_OFF", "MODE_VIOLATION", "TEMPERATURE_VIOLATION", "DEVICE_ERROR"]
+        .some((code) => error.message?.includes(code));
+      showToast(conditionError ? "현재 에어컨 상태가 미션 조건을 충족하지 않아요." : "미션 완료를 저장하지 못했어요.");
+      return;
+    }
+
+    await loadSupabaseUserData();
+    const points = data?.[0]?.points_awarded ?? 0;
+    showToast(points > 0 ? `${mission.title} 완료! ${points}P를 받았어요.` : "이미 완료한 미션이에요.");
+    return;
+  }
+
+  if (mission.code === "filter-check" && airconState.filter !== "깨끗함") {
+    showToast("필터를 정상 상태로 복구한 뒤 완료해 주세요.");
+    return;
+  }
+
+  const wasAwarded = awardMissionPoints(mission);
+  if (mission.code === "eco-cooling-26") {
+    missionState.status = "success";
+    missionState.elapsedMinutes = mission.required_minutes;
+    missionState.warning = "";
+    renderMission();
+  }
+  showToast(wasAwarded ? `${mission.title} 완료! ${mission.reward_points}P를 받았어요.` : "이미 완료한 미션이에요.");
 }
 
 /** 현재 에어컨 데이터가 오늘의 미션 조건을 만족하는지 확인합니다. */
@@ -794,11 +1000,26 @@ function renderMission() {
     ? '미션 참여하기 <span aria-hidden="true">→</span>'
     : missionState.status === "running"
       ? '진행 중 · 조건을 유지해 주세요 <span aria-hidden="true">●</span>'
-      : '미션 다시 도전하기 <span aria-hidden="true">↻</span>';
+      : missionState.status === "success"
+        ? '오늘 미션 완료 <span aria-hidden="true">✓</span>'
+        : '미션 다시 도전하기 <span aria-hidden="true">↻</span>';
+  missionStartButton.disabled = missionState.status === "success";
+
+  const mainCompleted = activeMissionRecord
+    ? walletState.completedMissionIds.includes(activeMissionRecord.id)
+    : false;
+  mainMissionCompleteButton.disabled = mainCompleted;
+  mainMissionCompleteButton.innerHTML = mainCompleted
+    ? '✓ 완료됨 <span aria-hidden="true">포인트 지급 완료</span>'
+    : `미션 완료 <span aria-hidden="true">+${formatPoint(activeMissionRecord?.reward_points ?? 120)}P</span>`;
 }
 
 /** 오늘의 미션을 처음부터 시작하거나 완료/실패 후 다시 시작합니다. */
 async function startMission() {
+  if (activeMissionRecord && walletState.completedMissionIds.includes(activeMissionRecord.id)) {
+    showToast("오늘 완료한 미션은 다시 시작할 수 없어요.");
+    return;
+  }
   if (supabaseClient) {
     if (!currentUser) {
       changeScreen("my");
@@ -887,8 +1108,8 @@ async function advanceMissionTime() {
 
   if (missionState.elapsedMinutes >= 120) {
     missionState.status = "success";
-    const wasAwarded = awardMissionPoints();
-    showToast(wasAwarded ? "미션 성공! GREEN POINT 120P를 받았어요." : "축하해요! GREEN MISSION에 성공했어요.");
+    const wasAwarded = awardMissionPoints(activeMissionRecord);
+    showToast(wasAwarded ? `미션 성공! GREEN POINT ${activeMissionRecord.reward_points}P를 받았어요.` : "축하해요! GREEN MISSION에 성공했어요.");
   } else {
     showToast(`미션 시간이 ${missionState.elapsedMinutes}분으로 진행됐어요.`);
   }
@@ -1056,6 +1277,14 @@ simulationButtons.forEach((button) => {
 });
 
 missionStartButton.addEventListener("click", startMission);
+mainMissionCompleteButton.addEventListener("click", () => completeMission(activeMissionRecord));
+
+missionList.addEventListener("click", (event) => {
+  const completeButton = event.target.closest("[data-complete-mission]");
+  if (!completeButton) return;
+  const mission = missions.find((item) => item.id === completeButton.dataset.completeMission);
+  completeMission(mission);
+});
 
 missionActionButtons.forEach((button) => {
   button.addEventListener("click", () => handleMissionSimulation(button.dataset.missionAction));
@@ -1105,6 +1334,7 @@ renderWeather();
 loadCurrentWeather();
 renderAirconState();
 renderMission();
+renderMissionCollection();
 renderWallet();
 renderRewards();
 renderOrders();
@@ -1128,6 +1358,16 @@ if (!supabaseClient && missionPreview === "failed") {
   startMission();
   handleMissionSimulation("violate");
   advanceMissionTime();
+}
+
+// ?complete=filter-check&duplicate=1로 완료·포인트 지급·중복 방지를 자동 회귀 검사합니다.
+const completePreview = pageQuery.get("complete");
+if (!supabaseClient && completePreview) {
+  const previewMission = missions.find((mission) => mission.code === completePreview);
+  if (previewMission) {
+    completeMission(previewMission);
+    if (pageQuery.get("duplicate") === "1") completeMission(previewMission);
+  }
 }
 
 // ?purchase=상품ID를 사용하면 구매 성공 또는 포인트 부족 화면을 빠르게 검증할 수 있습니다.
