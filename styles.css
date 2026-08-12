@@ -1,11 +1,12 @@
 :root {
-  --brown-900: #4b2d2a;
-  --brown-700: #75433f;
-  --pink-700: #c74f7a;
-  --pink-500: #e878a1;
-  --pink-200: #f3c2d4;
-  --pink-100: #fbe5ed;
-  --pink-50: #fff7fa;
+  --brown-900: #3e2723;
+  --brown-700: #654944;
+  --pink-700: #9f6678;
+  --pink-500: #f4c9d6;
+  --pink-200: #f7dbe3;
+  --pink-100: #fbe9ee;
+  --pink-50: #fff8fa;
+  --page-background: #e8dadc;
   /* 기존 컴포넌트를 안전하게 유지하면서 Brown + Pink 팔레트로 전환하는 호환 토큰입니다. */
   --blue-900: var(--brown-900);
   --blue-700: var(--brown-700);
@@ -18,11 +19,11 @@
   --green-100: #ddf7e9;
   --red-600: #d9304f;
   --red-100: #ffe6eb;
-  --ink: #402e30;
-  --muted: #826d71;
-  --line: #eedde2;
+  --ink: #3e2723;
+  --muted: #806b68;
+  --line: #e8d3d8;
   --white: #ffffff;
-  --shadow: 0 14px 36px rgba(100, 55, 67, 0.11);
+  --shadow: 0 16px 38px rgba(62, 39, 35, 0.11);
   --radius-lg: 28px;
   --radius-md: 20px;
   --safe-bottom: env(safe-area-inset-bottom, 0px);
@@ -41,7 +42,7 @@ body {
   min-width: 320px;
   min-height: 100vh;
   color: var(--ink);
-  background: #f8f1f3;
+  background: var(--page-background);
   font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
 }
@@ -69,9 +70,7 @@ a:focus-visible {
   margin: 0 auto;
   padding-bottom: calc(92px + var(--safe-bottom));
   overflow: hidden;
-  background:
-    radial-gradient(circle at 90% 6%, rgba(232, 120, 161, 0.13), transparent 22rem),
-    var(--white);
+  background: var(--page-background);
 }
 
 .top-bar {
@@ -193,6 +192,7 @@ a:focus-visible {
   color: var(--blue-900);
   background: var(--white);
   cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 
 .icon-button svg {
@@ -370,7 +370,7 @@ h2 {
   border-radius: 15px;
   color: var(--blue-900);
   background: var(--white);
-  box-shadow: 0 8px 20px rgba(18, 57, 112, 0.16);
+  box-shadow: 0 8px 20px rgba(62, 39, 35, 0.16);
   font-size: 0.82rem;
   font-weight: 800;
   cursor: pointer;
@@ -379,7 +379,7 @@ h2 {
 
 .primary-button:hover {
   transform: translateY(-2px);
-  box-shadow: 0 12px 24px rgba(18, 57, 112, 0.22);
+  box-shadow: 0 12px 24px rgba(62, 39, 35, 0.22);
 }
 
 .hero-visual {
@@ -509,7 +509,8 @@ h2 {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--white);
-  box-shadow: 0 8px 24px rgba(27, 85, 145, 0.07);
+  box-shadow: 0 8px 24px rgba(62, 39, 35, 0.07);
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .summary-icon {
@@ -519,7 +520,7 @@ h2 {
   height: 54px;
   place-items: center;
   border-radius: 18px;
-  background: #fff6dc;
+  background: var(--pink-50);
   font-size: 1.55rem;
 }
 
@@ -607,14 +608,130 @@ h2 {
   margin: -6px 0 16px;
 }
 
+.mission-overview {
+  display: grid;
+  gap: 22px;
+  align-items: center;
+  margin-bottom: 18px;
+  padding: 22px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.88);
+  box-shadow: 0 12px 30px rgba(62, 39, 35, 0.08);
+}
+
+/*
+ * Circular progress interaction adapted from “jQuery Circular Progress Bar With Text Counter”.
+ * GreenON은 jQuery 없이 CSS conic-gradient와 Vanilla JS requestAnimationFrame으로 구현합니다.
+ */
+.circle-percent {
+  --progress-angle: 0deg;
+  position: relative;
+  width: min(178px, 52vw);
+  aspect-ratio: 1;
+  margin: 0 auto;
+}
+
+.circle-inner {
+  position: absolute;
+  inset: 0;
+  padding: 13px;
+  border-radius: 50%;
+  background: conic-gradient(var(--brown-900) var(--progress-angle), var(--pink-500) 0);
+  box-shadow: 0 14px 30px rgba(62, 39, 35, 0.13);
+}
+
+.round-per {
+  width: 100%;
+  height: 100%;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: var(--white);
+}
+
+.circle-inbox {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  text-align: center;
+}
+
+.percent-text,
+.circle-inbox span {
+  display: block;
+}
+
+.percent-text {
+  color: var(--brown-900);
+  font-size: clamp(2rem, 9vw, 2.65rem);
+  line-height: 1;
+}
+
+.circle-inbox span {
+  margin-top: 7px;
+  color: var(--muted);
+  font-size: 0.68rem;
+  font-weight: 800;
+}
+
+.mission-overview-copy h2 {
+  font-size: clamp(1.25rem, 5vw, 1.65rem);
+}
+
+.mission-overview-copy > p:not(.eyebrow) {
+  margin: 9px 0 0;
+  color: var(--muted);
+  font-size: 0.78rem;
+  line-height: 1.65;
+}
+
+.mission-flow {
+  display: flex;
+  gap: 7px;
+  align-items: center;
+  margin-top: 16px;
+  overflow-x: auto;
+  color: var(--brown-900);
+  white-space: nowrap;
+  scrollbar-width: none;
+}
+
+.mission-flow span {
+  padding: 8px 10px;
+  border: 1px solid var(--pink-500);
+  border-radius: 999px;
+  background: var(--pink-100);
+  font-size: 0.65rem;
+  font-weight: 850;
+}
+
+.mission-flow i {
+  color: var(--pink-700);
+  font-size: 0.7rem;
+  font-style: normal;
+}
+
+.mission-total {
+  display: inline-block;
+  margin-top: 15px;
+  color: var(--brown-700);
+  font-size: 0.78rem;
+}
+
+.mission-total b {
+  color: var(--brown-900);
+  font-size: 1.05rem;
+}
+
 .aircon-card {
   margin-top: 14px;
   padding: 22px;
   border: 1px solid var(--line);
   border-radius: var(--radius-lg);
   background: var(--white);
-  box-shadow: 0 10px 30px rgba(27, 85, 145, 0.08);
-  transition: border-color 180ms ease, background 180ms ease;
+  box-shadow: 0 10px 30px rgba(62, 39, 35, 0.08);
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .aircon-card-header,
@@ -673,7 +790,7 @@ h2 {
   height: 7px;
   border-radius: 50%;
   background: currentColor;
-  box-shadow: 0 0 0 4px rgba(73, 162, 246, 0.14);
+  box-shadow: 0 0 0 4px rgba(244, 201, 214, 0.42);
 }
 
 .temperature-panel {
@@ -782,7 +899,7 @@ h2 {
   gap: 18px;
   margin-top: 14px;
   padding: 18px;
-  border: 1px dashed #b8d8f4;
+  border: 1px dashed var(--pink-700);
   border-radius: 18px;
   background: var(--blue-50);
 }
@@ -822,6 +939,7 @@ h2 {
   font-size: 0.7rem;
   font-weight: 800;
   cursor: pointer;
+  transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
 }
 
 .simulation-button:hover {
@@ -1012,7 +1130,7 @@ h2 {
   border-radius: var(--radius-lg);
   background: var(--white);
   box-shadow: var(--shadow);
-  transition: border-color 180ms ease, background 180ms ease;
+  transition: transform 180ms ease, border-color 180ms ease, background 180ms ease, box-shadow 180ms ease;
 }
 
 .mission-card::before {
@@ -1050,7 +1168,7 @@ h2 {
   padding: 7px 10px;
   border-radius: 999px;
   color: var(--muted);
-  background: #edf2f7;
+  background: var(--pink-100);
 }
 
 .mission-symbol {
@@ -1157,7 +1275,7 @@ h2 {
   margin-top: 12px;
   overflow: hidden;
   border-radius: 999px;
-  background: #dceaf6;
+  background: var(--pink-200);
 }
 
 .mission-progress-track span {
@@ -1173,7 +1291,7 @@ h2 {
   display: flex;
   justify-content: space-between;
   margin-top: 7px;
-  color: #91a2b5;
+  color: var(--muted);
   font-size: 0.53rem;
   font-weight: 700;
 }
@@ -1235,23 +1353,52 @@ h2 {
   line-height: 1.5;
 }
 
-.mission-start-button {
+.mission-primary-actions {
+  display: grid;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.mission-start-button,
+.mission-complete-button,
+.daily-mission-button {
   display: flex;
   gap: 12px;
   align-items: center;
   justify-content: center;
   width: 100%;
   min-height: 52px;
-  margin-top: 18px;
   padding: 10px 18px;
   border: 0;
   border-radius: 16px;
   color: var(--white);
-  background: linear-gradient(135deg, var(--blue-700), var(--blue-500));
-  box-shadow: 0 10px 22px rgba(23, 105, 210, 0.2);
+  background: var(--brown-900);
+  box-shadow: 0 10px 22px rgba(62, 39, 35, 0.16);
   font-size: 0.84rem;
   font-weight: 900;
   cursor: pointer;
+  transition: transform 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.mission-complete-button {
+  border: 1px solid var(--brown-900);
+  color: var(--brown-900);
+  background: var(--pink-500);
+  box-shadow: none;
+}
+
+.mission-complete-button span,
+.daily-mission-button span {
+  font-size: 0.68rem;
+}
+
+.mission-complete-button:disabled,
+.daily-mission-button:disabled {
+  border-color: var(--line);
+  color: var(--muted);
+  background: var(--pink-100);
+  box-shadow: none;
+  cursor: default;
 }
 
 .mission-card.is-running .mission-status {
@@ -1284,7 +1431,7 @@ h2 {
   gap: 18px;
   margin-top: 16px;
   padding: 20px;
-  border: 1px dashed #b8d8f4;
+  border: 1px dashed var(--pink-700);
   border-radius: var(--radius-md);
   background: var(--blue-50);
 }
@@ -1310,6 +1457,126 @@ h2 {
   min-height: 44px;
   color: var(--white);
   background: var(--blue-700);
+}
+
+.daily-mission-section {
+  margin-top: 30px;
+}
+
+.daily-mission-section .section-heading {
+  margin: 0 0 14px;
+}
+
+.daily-mission-section .section-heading > span {
+  flex: 0 0 auto;
+  color: var(--muted);
+  font-size: 0.65rem;
+  font-weight: 800;
+}
+
+.daily-mission-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.daily-mission-card {
+  display: grid;
+  gap: 16px;
+  min-width: 0;
+  padding: 20px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-md);
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 9px 24px rgba(62, 39, 35, 0.07);
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+}
+
+.daily-mission-card.is-completed {
+  border-color: var(--pink-500);
+  background: var(--pink-50);
+}
+
+.daily-mission-card-top {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.daily-mission-icon {
+  display: grid;
+  flex: 0 0 auto;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 16px;
+  background: var(--pink-100);
+  font-size: 1.35rem;
+}
+
+.daily-mission-copy {
+  min-width: 0;
+  flex: 1;
+}
+
+.daily-mission-copy small {
+  display: block;
+  color: var(--pink-700);
+  font-size: 0.58rem;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+}
+
+.daily-mission-copy h3 {
+  margin: 5px 0 0;
+  color: var(--brown-900);
+  font-size: 0.96rem;
+}
+
+.daily-mission-copy p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 0.7rem;
+  line-height: 1.55;
+}
+
+.daily-mission-points {
+  flex: 0 0 auto;
+  padding: 6px 9px;
+  border-radius: 999px;
+  color: var(--brown-900);
+  background: var(--pink-500);
+  font-size: 0.66rem;
+  font-weight: 900;
+}
+
+.daily-mission-button {
+  min-height: 44px;
+  border: 0;
+  border-radius: 14px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .mission-card:hover,
+  .daily-mission-card:hover,
+  .reward-card:hover,
+  .summary-card:hover,
+  .aircon-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 17px 34px rgba(62, 39, 35, 0.13);
+  }
+
+  .mission-start-button:hover,
+  .mission-complete-button:not(:disabled):hover,
+  .daily-mission-button:not(:disabled):hover,
+  .purchase-button:hover,
+  .reward-detail-button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 24px rgba(62, 39, 35, 0.2);
+  }
+
+  .mission-complete-button:not(:disabled):hover {
+    background: var(--pink-200);
+  }
 }
 
 .wallet-mini-icon {
@@ -1497,7 +1764,7 @@ h2 {
 
 .wallet-empty {
   padding: 38px 22px;
-  border: 1px dashed #b8d8f4;
+  border: 1px dashed var(--pink-700);
   border-radius: var(--radius-md);
   background: var(--blue-50);
   text-align: center;
@@ -1605,7 +1872,8 @@ h2 {
   border: 1px solid var(--line);
   border-radius: var(--radius-md);
   background: var(--white);
-  box-shadow: 0 8px 22px rgba(27, 85, 145, 0.06);
+  box-shadow: 0 8px 22px rgba(62, 39, 35, 0.06);
+  transition: transform 180ms ease, box-shadow 180ms ease;
 }
 
 .reward-image {
@@ -1617,7 +1885,7 @@ h2 {
 }
 
 .reward-card:nth-child(2n) .reward-image {
-  background: #eefaf4;
+  background: var(--pink-100);
 }
 
 .reward-card-body {
@@ -1738,11 +2006,11 @@ h2 {
   border-radius: 26px;
   color: var(--ink);
   background: var(--white);
-  box-shadow: 0 25px 70px rgba(18, 57, 112, 0.28);
+  box-shadow: 0 25px 70px rgba(62, 39, 35, 0.28);
 }
 
 .reward-dialog::backdrop {
-  background: rgba(18, 45, 78, 0.48);
+  background: rgba(62, 39, 35, 0.48);
   backdrop-filter: blur(5px);
 }
 
@@ -1895,7 +2163,7 @@ h2 {
   padding: 6px 9px;
   border-radius: 999px;
   color: var(--muted);
-  background: #edf2f7;
+  background: var(--pink-100);
   font-size: 0.62rem;
   font-weight: 800;
 }
@@ -1980,7 +2248,7 @@ h2 {
 .auth-tabs button.is-active {
   color: var(--blue-700);
   background: var(--white);
-  box-shadow: 0 4px 12px rgba(27, 85, 145, 0.08);
+  box-shadow: 0 4px 12px rgba(62, 39, 35, 0.08);
 }
 
 .auth-form {
@@ -2231,7 +2499,7 @@ h2 {
   margin-top: 12px;
   padding: 13px;
   border-radius: 14px;
-  background: #fff8e5;
+  background: var(--pink-100);
 }
 
 .report-note p {
@@ -2406,6 +2674,15 @@ h2 {
     padding: 32px;
   }
 
+  .mission-overview {
+    grid-template-columns: 190px minmax(0, 1fr);
+    padding: 28px 32px;
+  }
+
+  .mission-primary-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
   .mission-conditions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -2421,6 +2698,10 @@ h2 {
 
   .mission-simulator-actions .simulation-button:first-child {
     grid-column: auto;
+  }
+
+  .daily-mission-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
   }
 
   .reward-grid {
