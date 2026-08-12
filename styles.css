@@ -35,6 +35,7 @@
 
 html {
   scroll-behavior: smooth;
+  cursor: default;
 }
 
 body {
@@ -45,15 +46,27 @@ body {
   background: var(--page-background);
   font-family: Pretendard, "Apple SD Gothic Neo", "Noto Sans KR", system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
+  cursor: default;
 }
 
 button,
 a {
   -webkit-tap-highlight-color: transparent;
+  cursor: pointer;
 }
 
 button {
   font: inherit;
+}
+
+input,
+textarea {
+  cursor: text;
+}
+
+button:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
 }
 
 button:focus-visible,
